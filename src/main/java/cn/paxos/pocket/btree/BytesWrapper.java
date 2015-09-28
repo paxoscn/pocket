@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import cn.paxos.pocket.util.BytesUtils;
+
 public class BytesWrapper implements Comparable<BytesWrapper>, Iterable<Byte>
 {
   
@@ -59,6 +61,11 @@ public class BytesWrapper implements Comparable<BytesWrapper>, Iterable<Byte>
       e.printStackTrace();
       throw new RuntimeException(e);
     }
+  }
+
+  public void appendReversed(long l)
+  {
+    this.append(BytesUtils.longToBytesReversed(l));
   }
 
   @Override

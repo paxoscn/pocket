@@ -25,6 +25,17 @@ public class BytesUtils
     return bytes;
   }
 
+  public static byte[] longToBytesReversed(long value)
+  {
+    byte[] bytes = new byte[8];
+    for (int i = bytes.length - 1; i >= 0; i--)
+    {
+      int offset = i * 8;
+      bytes[7 - i] = (byte) (value >> offset);
+    }
+    return bytes;
+  }
+
   public static int bytesToInt(byte[] bytes, int bytesOffset)
   {
     int intValue = 0;
