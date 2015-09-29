@@ -120,8 +120,18 @@ public class BytesWrapper implements Comparable<BytesWrapper>, Iterable<Byte>
         {
           if (bytesIterator.hasNext())
           {
-            bytes = bytesIterator.next();
-            byteIndex = 0;
+            do
+            {
+              bytes = bytesIterator.next();
+            } while (bytes.length < 1 && bytesIterator.hasNext());
+            if (bytes.length < 1)
+            {
+              bytes = null;
+              byteIndex = -1;
+            } else
+            {
+              byteIndex = 0;
+            }
           } else
           {
             bytes = null;
