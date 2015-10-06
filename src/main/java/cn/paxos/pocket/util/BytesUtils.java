@@ -1,5 +1,8 @@
 package cn.paxos.pocket.util;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 public class BytesUtils
 {
 
@@ -45,6 +48,21 @@ public class BytesUtils
       intValue |= (bytes[bytesOffset + i] & 0xFF) << offset;
     }
     return intValue;
+  }
+  
+  public static byte[] md5(String str)
+  {
+    // TODO init once ?
+    try
+    {
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      return md.digest(str.getBytes());
+    } catch (NoSuchAlgorithmException e)
+    {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    }
   }
 
 }

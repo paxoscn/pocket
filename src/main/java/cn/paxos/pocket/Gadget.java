@@ -4,6 +4,7 @@ import static cn.paxos.pocket.util.BytesUtils.bytesToInt;
 import static cn.paxos.pocket.util.BytesUtils.intToBytes;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +54,16 @@ public class Gadget
       }
     }
   }
+  private Gadget(byte[] newKeyPrefix, BytesWrapper oldKey, Map<String, String> oldAttributes, BytesWrapper oldBinary)
+  {
+    this.key = cloneAndReplace(0, oldKey, newKeyPrefix);
+    this.attributes = oldAttributes;
+    if (oldBinary != null)
+    {
+      this.binary = cloneAndReplace(1, oldBinary, newKeyPrefix);
+    }
+    
+  }
   public BytesWrapper getKey()
   {
     return key;
@@ -72,6 +83,10 @@ public class Gadget
       attributeValue = BLANK_STRING;
     }
     attributes.put(attributeName, attributeValue);
+  }
+  public Gadget clone(byte[] newKeyPrefix)
+  {
+    return new Gadget(newKeyPrefix, this.key, this.attributes, this.binary);
   }
   BytesWrapper getBinary()
   {
@@ -109,6 +124,20 @@ public class Gadget
       bs[i] = iter.next();
     }
     return bs;
+  }
+  private BytesWrapper cloneAndReplace(int arrayOffset, BytesWrapper old, byte[] replacement)
+  {
+    List<byte[]> oldArrays = old.getArrays();
+    List<byte[]> newArrays = new ArrayList<byte[]>(oldArrays);
+    byte[] array = newArrays.get(arrayOffset);
+    byte[] newArray = new byte[array.length];
+    System.arraycopy(replacement, 0, newArray, 0, replacement.length);
+    if (newArray.length - replacement.length > 0)
+    {
+      System.arraycopy(array, replacement.length, newArray, replacement.length, newArray.length - replacement.length);
+    }
+    newArrays.set(arrayOffset, newArray);
+    return new BytesWrapper(newArrays, old.getLength());
   }
 
 }

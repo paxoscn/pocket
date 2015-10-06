@@ -50,17 +50,7 @@ public class BytesWrapper implements Comparable<BytesWrapper>, Iterable<Byte>
 
   public void append(String str)
   {
-    // TODO init once ?
-    try
-    {
-      MessageDigest md = MessageDigest.getInstance("MD5");
-      this.append(md.digest(str.getBytes()));
-    } catch (NoSuchAlgorithmException e)
-    {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      throw new RuntimeException(e);
-    }
+    this.append(BytesUtils.md5(str));
   }
 
   public void appendReversed(long l)
