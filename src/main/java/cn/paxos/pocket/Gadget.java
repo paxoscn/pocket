@@ -60,7 +60,25 @@ public class Gadget
     this.attributes = oldAttributes;
     if (oldBinary != null)
     {
-      this.binary = cloneAndReplace(1, oldBinary, newKeyPrefix);
+      // java.lang.IndexOutOfBoundsException: Index: 1, Size: 1
+      if (oldBinary.getArrays().size() < 2)
+      {
+        List<byte[]> oldArrays = oldBinary.getArrays();
+        List<byte[]> newArrays = new ArrayList<byte[]>(oldArrays);
+        byte[] array = newArrays.get(0);
+        byte[] newArray = new byte[array.length];
+        System.arraycopy(array, 0, newArray, 0, 4);
+        System.arraycopy(newKeyPrefix, 0, newArray, 4, newKeyPrefix.length);
+        if (newArray.length - newKeyPrefix.length - 4 > 0)
+        {
+          System.arraycopy(array, 4 + newKeyPrefix.length, newArray, 4 + newKeyPrefix.length, newArray.length - newKeyPrefix.length - 4);
+        }
+        newArrays.set(0, newArray);
+        this.binary = new BytesWrapper(newArrays, oldBinary.getLength());
+      } else
+      {
+        this.binary = cloneAndReplace(1, oldBinary, newKeyPrefix);
+      }
     }
     
   }

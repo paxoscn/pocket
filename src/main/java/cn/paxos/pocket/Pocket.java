@@ -30,6 +30,39 @@ public class Pocket
     return new Gadget(value, false);
   }
   
+  public Iterable<Gadget> scan()
+  {
+    return new Iterable<Gadget>() {
+      @Override
+      public Iterator<Gadget> iterator()
+      {
+        return new Iterator<Gadget>() {
+          final Iterator<BytesWrapper> iter;
+          {
+            BytesWrapper start = new BytesWrapper(new byte[1]);
+            BytesWrapper stop = new BytesWrapper(new byte[] { (byte) 0xff });
+            iter = tree.search(start, stop).iterator();
+          }
+          @Override
+          public boolean hasNext()
+          {
+            return iter.hasNext();
+          }
+          @Override
+          public Gadget next()
+          {
+            BytesWrapper value = iter.next();
+            return new Gadget(value, false);
+          }
+          @Override
+          public void remove()
+          {
+          }
+        };
+      }
+    };
+  }
+  
   public Iterable<Gadget> scan(final BytesWrapper key)
   {
     return new Iterable<Gadget>() {
