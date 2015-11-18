@@ -172,6 +172,22 @@ public class DefaultDisk implements
   @Override
   public BTreeNode<BytesWrapper> getNode(Object nodeId)
   {
+    /*
+java.lang.NullPointerException
+        at cn.paxos.pocket.btree.DefaultDisk.getNode(DefaultDisk.java:181)
+        at cn.paxos.pocket.btree.DefaultDisk.getChild(DefaultDisk.java:187)
+        at cn.paxos.pocket.btree.BTreeInnerNode.getChild(BTreeInnerNode.java:33)
+        at cn.paxos.pocket.btree.BTreeInnerNode.insertAt(BTreeInnerNode.java:74)
+        at cn.paxos.pocket.btree.BTreeInnerNode.pushUpKey(BTreeInnerNode.java:124)
+        at cn.paxos.pocket.btree.BTreeNode.dealOverflow(BTreeNode.java:101)
+        at cn.paxos.pocket.btree.BTree.insert(BTree.java:23)
+        at cn.paxos.pocket.Pocket.put(Pocket.java:74)
+        at cn.classpath.entity.User.addHistory(User.java:264)
+     */
+    if (nodeId == null)
+    {
+      return null;
+    }
     BTreeNode<BytesWrapper> cached = cache.get(nodeId);
     if (cached != null)
     {
@@ -672,7 +688,7 @@ public class DefaultDisk implements
     {
       if (b != 0)
       {
-        return bytes;
+        return new Bytes(bytes);
       }
     }
     return null;
