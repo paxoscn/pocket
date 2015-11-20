@@ -388,7 +388,7 @@ java.lang.NullPointerException
       values = null;
       int childCount = bytesToInt(content, offset);
       offset += 4;
-      children = new byte[keys.length + 1][];
+      children = new Object[keys.length + 1];
       for (int i = 0; i < childCount; i++)
       {
         int index = bytesToInt(content, offset);
