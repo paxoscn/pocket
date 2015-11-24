@@ -394,7 +394,7 @@ java.lang.NullPointerException
         int index = bytesToInt(content, offset);
         byte[] childBytes = new byte[16];
         System.arraycopy(content, offset + 4, childBytes, 0, 16);
-        children[index] = childBytes;
+        children[index] = new Bytes(childBytes);
         offset += 20;
       }
     }
