@@ -1,5 +1,9 @@
 package cn.paxos.pocket.btree;
 
+import static cn.paxos.pocket.util.BytesUtils.bytesToInt;
+import static cn.paxos.pocket.util.BytesUtils.intToBytes;
+import static cn.paxos.pocket.util.BytesUtils.longToBytes;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -11,10 +15,6 @@ import java.nio.channels.WritableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
-import static cn.paxos.pocket.util.BytesUtils.bytesToInt;
-import static cn.paxos.pocket.util.BytesUtils.intToBytes;
-import static cn.paxos.pocket.util.BytesUtils.longToBytes;
 
 public class DefaultDisk implements
     Disk<BytesWrapper, BytesWrapper>
@@ -337,6 +337,100 @@ java.lang.NullPointerException
   {
     File nodeFile = new File(baseFolderPath + "/data"
         + partsToFile(idToParts(id)));
+    // By stream
+    FileInputStream inputStream = null;
+    boolean isLeaf;
+    byte[] parent;
+    byte[] left;
+    byte[] right;
+    int keyCount;
+    Object[] keys;
+    Object[] children;
+    Object[] values;
+    try
+    {
+      inputStream = new FileInputStream(nodeFile);
+      isLeaf = inputStream.read() != 0;
+      parent = new byte[16];
+      readFully(inputStream, parent);
+      left = new byte[16];
+      readFully(inputStream, left);
+      right = new byte[16];
+      readFully(inputStream, right);
+      final byte[] keyCountBytes = new byte[4];
+      readFully(inputStream, keyCountBytes);
+      keyCount = bytesToInt(keyCountBytes);
+      keys = new Object[BTreeNode.ORDER + 1];
+      for (int i = 0; i < keyCount; i++)
+      {
+        final byte[] indexBytes = new byte[4];
+        readFully(inputStream, indexBytes);
+        int index = bytesToInt(indexBytes);
+        final byte[] keyLengthBytes = new byte[4];
+        readFully(inputStream, keyLengthBytes);
+        int keyLength = bytesToInt(keyLengthBytes);
+        byte[] keyBytes = new byte[keyLength];
+        readFully(inputStream, keyBytes);
+        // FIXME Deserializing K
+        keys[index] = new BytesWrapper(keyBytes);
+        // System.out.println("K: " + java.util.Arrays.toString(keyBytes));
+      }
+      if (isLeaf)
+      {
+        children = null;
+        final byte[] valueCountBytes = new byte[4];
+        readFully(inputStream, valueCountBytes);
+        int valueCount = bytesToInt(valueCountBytes);
+        values = new BytesWrapper[keys.length];
+        for (int i = 0; i < valueCount; i++)
+        {
+          final byte[] indexBytes = new byte[4];
+          readFully(inputStream, indexBytes);
+          int index = bytesToInt(indexBytes);
+          final byte[] valueLengthBytes = new byte[4];
+          readFully(inputStream, valueLengthBytes);
+          int valueLength = bytesToInt(valueLengthBytes);
+          byte[] valueBytes = new byte[valueLength];
+          readFully(inputStream, valueBytes);
+          // FIXME Deserializing V
+          values[index] = new BytesWrapper(valueBytes);
+        }
+      } else
+      {
+        values = null;
+        final byte[] childCountBytes = new byte[4];
+        readFully(inputStream, childCountBytes);
+        int childCount = bytesToInt(childCountBytes);
+        children = new Object[keys.length + 1];
+        for (int i = 0; i < childCount; i++)
+        {
+          final byte[] indexBytes = new byte[4];
+          readFully(inputStream, indexBytes);
+          int index = bytesToInt(indexBytes);
+          byte[] childBytes = new byte[16];
+          readFully(inputStream, childBytes);
+          children[index] = new Bytes(childBytes);
+        }
+      }
+    } catch (IOException e)
+    {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+      throw new RuntimeException(e);
+    } finally
+    {
+      if (inputStream != null)
+      {
+        try
+        {
+          inputStream.close();
+        } catch (IOException e)
+        {
+        }
+      }
+    }
+    // By bytes
+    /*
     byte[] content = readFile(nodeFile);
     int offset = 0;
     boolean isLeaf = content[offset] != 0;
@@ -398,6 +492,7 @@ java.lang.NullPointerException
         offset += 20;
       }
     }
+    */
     final BTreeNode<BytesWrapper> node = isLeaf ? new BTreeLeafNode<BytesWrapper, BytesWrapper>(this,
         new Bytes(id)) : new BTreeInnerNode<BytesWrapper>(this, new Bytes(id));
     node.parentNodeId = zeroToNull(parent);
@@ -697,6 +792,21 @@ java.lang.NullPointerException
   private byte[] nullToZero(byte[] bytes)
   {
     return bytes == null ? new byte[16] : bytes;
+  }
+
+  private void readFully(FileInputStream inputStream, byte[] bs) throws IOException
+  {
+    readLeft(inputStream, bs, 0);
+  }
+
+  private void readLeft(FileInputStream inputStream, byte[] bs, int read) throws IOException
+  {
+    int toRead = bs.length - read;
+    int newRead = inputStream.read(bs, read, toRead);
+    if (newRead < toRead)
+    {
+      readLeft(inputStream, bs, read + newRead);
+    }
   }
 
   public static void main(String[] args)

@@ -1,5 +1,7 @@
 package cn.paxos.pocket;
 
+import java.util.Iterator;
+
 public class PrintAll
 {
   
@@ -8,7 +10,11 @@ public class PrintAll
     Pocket pocket = new Pocket(args[0]);
     for(Gadget row : pocket.scan())
     {
-      System.out.println(row.getAttribute("url"));
+      for (Iterator<String> iterator = row.iterateAttributeNames(); iterator.hasNext();)
+      {
+        String attributeName = iterator.next();
+        System.out.println(attributeName + " = " + row.getAttribute(attributeName));
+      }
     }
   }
 

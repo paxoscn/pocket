@@ -102,6 +102,10 @@ public class Gadget
     }
     attributes.put(attributeName, attributeValue);
   }
+  public Iterator<String> iterateAttributeNames()
+  {
+    return attributes.keySet().iterator();
+  }
   public Gadget clone(byte[] newKeyPrefix)
   {
     return new Gadget(newKeyPrefix, this.key, this.attributes, this.binary);

@@ -39,8 +39,21 @@ public class BytesUtils
     return bytes;
   }
 
+  public static int bytesToInt(byte[] bytes)
+  {
+    return bytesToInt(bytes, 0);
+  }
+
   public static int bytesToInt(byte[] bytes, int bytesOffset)
   {
+    if (bytes.length < 4)
+    {
+      System.out.println("Out 3");
+      System.out.println(java.util.Arrays.toString(bytes));
+      System.out.println(bytesOffset);
+      new RuntimeException().printStackTrace();
+      System.exit(-1);
+    }
     int intValue = 0;
     for (int i = 4 - 1; i >= 0; i--)
     {
