@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class DefaultDisk implements
+public class SingleThreadDisk implements
     Disk<BytesWrapper, BytesWrapper>
 {
 
@@ -28,7 +28,7 @@ public class DefaultDisk implements
 
   private Tx<BytesWrapper> tx = null;
 
-  public DefaultDisk(String baseFolderPath)
+  public SingleThreadDisk(String baseFolderPath)
   {
     this.baseFolderPath = baseFolderPath;
     File folder = new File(baseFolderPath + "/data");
@@ -42,17 +42,39 @@ public class DefaultDisk implements
   @Override
   public Object createNode(BTreeNode<BytesWrapper> node)
   {
-    final File tmpFile;
-    UUID uuid = UUID.randomUUID();
-    long mostSignificantBits = uuid.getMostSignificantBits();
-    long leastSignificantBits = uuid.getLeastSignificantBits();
+    File newFile = null;
+    long mostSignificantBits = -1;
+    long leastSignificantBits = -1;
     try
     {
-      tmpFile = File.createTempFile("pocket", ".node");
-    } catch (IOException e1)
+      boolean successful = false;
+      int tried = 0;
+      do
+      {
+        if (tried > 2)
+        {
+          throw new IOException("Failed to create");
+        }
+        UUID uuid = UUID.randomUUID();
+        mostSignificantBits = uuid.getMostSignificantBits();
+        leastSignificantBits = uuid.getLeastSignificantBits();
+        int[] parts = new int[]
+        { (int) ((mostSignificantBits & 0xffffffffL) % MAX_CHILDREN),
+            (int) ((mostSignificantBits >>> 32) % MAX_CHILDREN),
+            (int) ((leastSignificantBits & 0xffffffffL) % MAX_CHILDREN),
+            (int) ((leastSignificantBits >>> 32) % MAX_CHILDREN) };
+        File dataFolder = new File(baseFolderPath + "/data"
+            + partsToFolder(parts));
+        dataFolder.mkdirs();
+        newFile = new File(dataFolder, Integer.toString(parts[3]));
+        successful = newFile.createNewFile();
+        tried++;
+      } while (!successful);
+    } catch (IOException e)
     {
       // TODO Auto-generated catch block
-      throw new RuntimeException("Failed to create");
+      e.printStackTrace();
+      throw new RuntimeException(e);
     }
     byte[] id = new byte[16];
     System.arraycopy(longToBytes(mostSignificantBits), 0, id, 0, 8);
@@ -60,7 +82,7 @@ public class DefaultDisk implements
     FileOutputStream fos = null;
     try
     {
-      fos = new FileOutputStream(tmpFile);
+      fos = new FileOutputStream(newFile);
       fos.write(node.getNodeType().equals(TreeNodeType.LeafNode) ? 1 : 0);
       fos.write(new byte[56]);
     } catch (IOException e)
@@ -80,35 +102,6 @@ public class DefaultDisk implements
         }
       }
     }
-    File newFile = null;
-    int[] parts = new int[]
-    { (int) ((mostSignificantBits & 0xffffffffL) % MAX_CHILDREN),
-        (int) ((mostSignificantBits >>> 32) % MAX_CHILDREN),
-        (int) ((leastSignificantBits & 0xffffffffL) % MAX_CHILDREN),
-        (int) ((leastSignificantBits >>> 32) % MAX_CHILDREN) };
-    File dataFolder = new File(baseFolderPath + "/data"
-        + partsToFolder(parts));
-    dataFolder.mkdirs();
-    try
-    {
-      boolean successful = false;
-      int tried = 0;
-      do
-      {
-        if (tried > 2)
-        {
-          throw new IOException("Failed to move");
-        }
-        newFile = new File(dataFolder, Integer.toString(parts[3]));
-        successful = tmpFile.renameTo(newFile);
-        tried++;
-      } while (!successful);
-    } catch (IOException e)
-    {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-      throw new RuntimeException(e);
-    }
     return new Bytes(id);
   }
 
@@ -118,20 +111,11 @@ public class DefaultDisk implements
     File metaFile = new File(baseFolderPath, ".metadata");
     if (!metaFile.exists())
     {
-      final File tmpFile;
-      try
-      {
-        tmpFile = File.createTempFile("pocket", ".node");
-      } catch (IOException e1)
-      {
-        // TODO Auto-generated catch block
-        throw new RuntimeException("Failed to create");
-      }
       FileOutputStream fos = null;
       try
       {
-        tmpFile.createNewFile();
-        fos = new FileOutputStream(tmpFile);
+        metaFile.createNewFile();
+        fos = new FileOutputStream(metaFile);
         BTreeNode<BytesWrapper> root = new BTreeLeafNode<BytesWrapper, BytesWrapper>(this);
         fos.write(((Bytes) root.getId()).getBytes());
       } catch (IOException e)
@@ -151,7 +135,6 @@ public class DefaultDisk implements
           }
         }
       }
-      tmpFile.renameTo(metaFile);
     }
     byte[] id = readFile(metaFile);
     return getNode(new Bytes(id));
@@ -872,10 +855,10 @@ java.lang.NullPointerException
     @Override
     public void commit()
     {
-      DefaultDisk.this.tx = null;
+      SingleThreadDisk.this.tx = null;
       for (BTreeNode<BytesWrapper> node : map.values())
       {
-        DefaultDisk.this.saveAll(node);
+        SingleThreadDisk.this.saveAll(node);
       }
     }
 
